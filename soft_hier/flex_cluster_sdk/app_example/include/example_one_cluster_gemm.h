@@ -215,61 +215,82 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
         flex_global_barrier_xy();
         uint32_t cluster_id = flex_get_cluster_id();
         uint32_t core_id = flex_get_core_id();
-        int j = 0;
-        int i = 0;
         {
-            flex_global_barrier_xy();
-            {
-                // TEST DEVICE SCOPE
-                uint32_t accumulator = ACCUMULATOR_ADDR;
-                uint32_t local_A = LOCAL_A_ADDR;
-                uint32_t local_B = LOCAL_B_ADDR;
-                int gj = get_pos(cluster_id).x;
-                int gi = get_pos(cluster_id).y;
-                if (gj <= 3) {
-                    if (gi <= 3) {
-                        // Minels: [0, 0], Maxels: [3, 3]
-                        // Configure RedMule Here
-                        if(flex_is_first_core())
-                        {
-                            flex_redmule_config(32, 32, 32);
-                        }
-                        {
-                            for (auto ci = 0; ci < 64; ci += 32) {
-                                for (auto cj = 0; cj < 64; cj += 32) {
-                                    {
-                                        for (auto bK = 0; bK < K; bK += 32) {
-                                            // SoftHier: Emitting copy from A to local_A
-                                            // SoftHier_HBM -> SoftHier_TCDM 2D
-                                            if(flex_is_dm_core())
+            for (auto j = 0; j < M; j += 256) {
+                for (auto i = 0; i < N; i += 256) {
+            // int i = 0;
+            // int j = 0;
+                    flex_global_barrier_xy();
+                    {
+                        // TEST DEVICE SCOPE
+                        uint32_t accumulator = ACCUMULATOR_ADDR;
+                        uint32_t local_A = LOCAL_A_ADDR;
+                        uint32_t local_B = LOCAL_B_ADDR;
+                        int gj = get_pos(cluster_id).x;
+                        int gi = get_pos(cluster_id).y;
+                        if (gj <= 3) {
+                            if (gi <= 3) {
+                                // Minels: [0, 0], Maxels: [3, 3]
+                                // Configure RedMule Here
+                                if(flex_is_first_core())
+                                {
+                                    flex_redmule_config(32, 32, 32);
+                                }
+                                // CPU Scope <dace.sdfg.scope.ScopeSubgraphView object at 0x7f7af6e9e3d0>
+                                {
+                                    for (auto ci = 0; ci < 64; ci += 32) {
+                                        for (auto cj = 0; cj < 64; cj += 32) {
+                                            // CPU Scope <dace.sdfg.scope.ScopeSubgraphView object at 0x7f7af6e9e8d0>
                                             {
-                                                flex_dma_async_2d(local(local_A), hbm_addr(A + ((K * (((32 * ci) + (64 * gi)) + i)) + bK)), 32*2, 32*2, K*2, 32);
-                                                flex_dma_async_wait_all();
-                                            }
-                                            flex_intra_cluster_sync();
-                                            // SoftHier: Emitting copy from B to local_B
-                                            // SoftHier_HBM -> SoftHier_TCDM 2D
-                                            if(flex_is_dm_core())
-                                            {
-                                                flex_dma_async_2d(local(local_B), hbm_addr(B + ((((N * bK) + (32 * cj)) + (64 * gj)) + j)), 32*2, 32*2, N*2, 32);
-                                                flex_dma_async_wait_all();
-                                            }
-                                            flex_intra_cluster_sync();
-                                            if (flex_is_first_core())
-                                            {
-                                                uint32_t _in_local_a = local_A;
-                                                uint32_t _in_local_b = local_B;
-                                                uint32_t _in_accumulator = accumulator;
+                                                for (auto bK = 0; bK < K; bK += 32) {
+                                                    // SoftHier: Emitting copy from A to local_A
+                                                    // copy_memory: A -> local_A, [32, 32], [K, 1], [32, 1], A + ((K * (((32 * ci) + (64 * gi)) + i)) + bK), local_A
+                                                    // subset.string_list() = ['32*ci + 64*gi + i:32*ci + 64*gi + i + 32', 'bK:bK + 32']
+                                                    // SoftHier_HBM -> SoftHier_TCDM 2D
+                                                    if(flex_is_dm_core())
+                                                    {
+                                                        flex_dma_async_2d(local(local_A), hbm_addr(A + ((K * (((32 * ci) + (64 * gi)) + i)) + bK)), 32*2, 32*2, K*2, 32);
+                                                        flex_dma_async_wait_all();
+                                                    }
+                                                    flex_intra_cluster_sync();
+                                                    // SoftHier: Emitting copy from B to local_B
+                                                    // copy_memory: B -> local_B, [32, 32], [N, 1], [32, 1], B + ((((N * bK) + (32 * cj)) + (64 * gj)) + j), local_B
+                                                    // subset.string_list() = ['bK:bK + 32', '32*cj + 64*gj + j:32*cj + 64*gj + j + 32']
+                                                    // SoftHier_HBM -> SoftHier_TCDM 2D
+                                                    if(flex_is_dm_core())
+                                                    {
+                                                        flex_dma_async_2d(local(local_B), hbm_addr(B + ((((N * bK) + (32 * cj)) + (64 * gj)) + j)), 32*2, 32*2, N*2, 32);
+                                                        flex_dma_async_wait_all();
+                                                    }
+                                                    flex_intra_cluster_sync();
+                                                    if (flex_is_first_core())
+                                                    {
+                                                        uint32_t _in_local_a = local_A;
+                                                        uint32_t _in_local_b = local_B;
+                                                        uint32_t _in_accumulator = accumulator;
 
-                                                ///////////////////
-                                                flex_redmule_trigger(_in_local_a, _in_local_b, _in_accumulator, REDMULE_FP_16);
-                                                flex_redmule_wait();
-                                                ///////////////////
+                                                        ///////////////////
+                                                        flex_redmule_trigger(_in_local_a, _in_local_b, _in_accumulator, REDMULE_FP_16);
+                                                        flex_redmule_wait();
+                                                        ///////////////////
 
-                                                
+                                                    }
+                                                    flex_intra_cluster_sync();
+                                                    // SoftHier: Emitting copy from accumulator to accumulator
+                                                    // copy_memory: accumulator -> accumulator, [1024], [1], [1], accumulator, accumulator
+                                                    // subset.string_list() = ['0:32', '0:32']
+                                                    // SoftHier_TCDM -> SoftHier_TCDM
+                                                    if(flex_is_dm_core())
+                                                    {
+                                                        flex_dma_async_1d(local(accumulator), local(accumulator), 32*2);
+                                                        flex_dma_async_wait_all();
+                                                    }
+                                                    flex_intra_cluster_sync();
+                                                }
                                             }
-                                            flex_intra_cluster_sync();
                                             // SoftHier: Emitting copy from accumulator to C
+                                            // copy_memory: accumulator -> C, [32, 32], [32, 1], [N, 1], accumulator, C + ((((N * (((32 * ci) + (64 * gi)) + i)) + (32 * cj)) + (64 * gj)) + j)
+                                            // subset.string_list() = ['32*ci + 64*gi + i:32*ci + 64*gi + i + 32', '32*cj + 64*gj + j:32*cj + 64*gj + j + 32']
                                             // SoftHier_TCDM -> SoftHier_HBM
                                             if(flex_is_dm_core())
                                             {
@@ -283,11 +304,12 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
                             }
                         }
                     }
+                    flex_global_barrier_xy();
+                    // Finished deivelevel scope
                 }
             }
-            flex_global_barrier_xy();
-            // Finished deivelevel scope
         }
     }
 }
+
 #endif

@@ -122,14 +122,12 @@ void flex_dma_async_1d(uint32_t dst_addr, uint32_t src_addr, size_t transfer_siz
 void flex_dma_async_2d(uint64_t dst, uint64_t src,
                                                  size_t size, size_t dst_stride,
                                                  size_t src_stride,
-                                                 size_t repeat) {
-    // flex_push_stack();                    
-    // bare_dma_start_2d(dst, src, size, dst_stride, src_stride, repeat); //Start iDMA
-    // flex_pull_stack();
-    for (int i = 0; i < repeat; i++)
-    {
-        flex_dma_async_1d(dst + i * dst_stride, src + i * src_stride, size);
-    }
+                                                 size_t repeat) {                
+    bare_dma_start_2d(dst, src, size, dst_stride, src_stride, repeat); //Start iDMA
+    // for (int i = 0; i < repeat; i++)
+    // {
+    //     flex_dma_async_1d(dst + i * dst_stride, src + i * src_stride, size);
+    // }
 
 }
 
