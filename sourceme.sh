@@ -9,6 +9,7 @@ else
     SDK_HOME="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 fi
 
+export MPLBACKEND=Agg
 export PATH=$SDK_HOME/install/bin:$PATH
 export PYTHONPATH=$SDK_HOME/install/python:$PYTHONPATH
 
@@ -59,6 +60,8 @@ fi
 if [[ "$VIRTUAL_ENV" != *"pyenv_softhier"* ]]; then
     echo "Activating virtual environment 'pyenv_softhier'..."
     source pyenv_softhier/bin/activate
+    # echo which python
+    echo "Python version: $(which python)"
 else
     echo "'pyenv_softhier' environment is already active. Skipping activation."
 fi

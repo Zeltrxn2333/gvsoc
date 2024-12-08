@@ -148,3 +148,5 @@ iter:
 run:
 	./install/bin/gvsoc --target=pulp.chips.flex_cluster.flex_cluster --binary sw_build/softhier.elf run --trace=/chip/cluster_0/redmule
 
+# /scratch/dace4softhier/dace_soft_hier/dace/soft_hier/matmul/.dacecache/GEMM/build/softhier.elf
+# ./install/bin/gvsoc --target=pulp.chips.flex_cluster.flex_cluster --binary /scratch/dace4softhier/dace_soft_hier/dace/soft_hier/matmul/.dacecache/GEMM/build/softhier.elf run --trace=/chip/cluster_0/redmule

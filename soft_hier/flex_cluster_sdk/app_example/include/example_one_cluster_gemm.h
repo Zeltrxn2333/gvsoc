@@ -278,14 +278,6 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
                                                     flex_intra_cluster_sync();
                                                     // SoftHier: Emitting copy from accumulator to accumulator
                                                     // copy_memory: accumulator -> accumulator, [1024], [1], [1], accumulator, accumulator
-                                                    // subset.string_list() = ['0:32', '0:32']
-                                                    // SoftHier_TCDM -> SoftHier_TCDM
-                                                    if(flex_is_dm_core())
-                                                    {
-                                                        flex_dma_async_1d(local(accumulator), local(accumulator), 32*2);
-                                                        flex_dma_async_wait_all();
-                                                    }
-                                                    flex_intra_cluster_sync();
                                                 }
                                             }
                                             // SoftHier: Emitting copy from accumulator to C
