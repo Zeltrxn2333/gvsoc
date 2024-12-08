@@ -50,9 +50,15 @@ class FlexClusterSystem(gvsoc.systree.Component):
 
         # Get Binary
         binary = None
+        preload_binary = None
+        has_preload_binary = 0
         if parser is not None:
+            parser.add_argument("--preload", type=str, help="Path to the HBM preload binary file")
             [args, otherArgs] = parser.parse_known_args()
             binary = args.binary
+            preload_binary = args.preload
+            if preload_binary is not None:
+                has_preload_binary = 1
 
         ##############
         # Components #
@@ -67,6 +73,8 @@ class FlexClusterSystem(gvsoc.systree.Component):
                                         tcdm_size           =   arch.cluster_tcdm_size,
                                         stack_base          =   arch.cluster_stack_base,
                                         stack_size          =   arch.cluster_stack_size,
+                                        zomem_base          =   arch.cluster_zomem_base,
+                                        zomem_size          =   arch.cluster_zomem_size,
                                         reg_base            =   arch.cluster_reg_base,
                                         reg_size            =   arch.cluster_reg_size,
                                         sync_base           =   arch.sync_base,
@@ -95,7 +103,7 @@ class FlexClusterSystem(gvsoc.systree.Component):
         narrow_interco = router.Router(self, 'narrow_interco', bandwidth=8)
 
         #Control register
-        csr = CtrlRegisters(self, 'ctrl_registers', num_cluster_x=arch.num_cluster_x, num_cluster_y=arch.num_cluster_y)
+        csr = CtrlRegisters(self, 'ctrl_registers', num_cluster_x=arch.num_cluster_x, num_cluster_y=arch.num_cluster_y, has_preload_binary=has_preload_binary)
 
         #Synchronization bus
         sync_bus = FlexMeshNoC(self, 'sync_bus', width=4,
@@ -132,19 +140,26 @@ class FlexClusterSystem(gvsoc.systree.Component):
         #Debug Memory
         debug_mem = memory.memory.Memory(self,'debug_mem', size=1)
 
+        #HBM Preloader
+        hbm_preloader = utils.loader.loader.ElfLoader(self, 'hbm_preloader', binary=preload_binary)
+
         ############
         # Bindings #
         ############
 
         #Debug memory
         narrow_interco.o_MAP(debug_mem.i_INPUT())
-        narrow_interco.o_MAP(data_noc.i_CLUSTER_INPUT(0, 0), base=arch.hbm_start_base, size=arch.hbm_node_interleave * (arch.hbm_placement[0] + arch.hbm_placement[1] + arch.hbm_placement[2] + arch.hbm_placement[3]), rm_base=False)
+        narrow_interco.o_MAP(data_noc.i_CLUSTER_INPUT(0, 0), base=arch.hbm_start_base, size=arch.hbm_node_addr_space * (arch.hbm_placement[0] + arch.hbm_placement[1] + arch.hbm_placement[2] + arch.hbm_placement[3]), rm_base=False)
 
         #Control register
         narrow_interco.o_MAP(csr.i_INPUT(), base=arch.soc_register_base, size=arch.soc_register_size, rm_base=True)
         for cluster_id in range(num_clusters):
             csr.o_BARRIER_ACK(cluster_list[cluster_id].i_SYNC_IRQ())
             pass
+
+        #HBM Preloader
+        hbm_preloader.o_OUT(data_noc.i_CLUSTER_INPUT(0, 0))
+        hbm_preloader.o_START(csr.i_HBM_PRELOAD_DONE())
 
         #Clusters
         for cluster_id in range(num_clusters):
@@ -183,9 +198,9 @@ class FlexClusterSystem(gvsoc.systree.Component):
                 for sub_hbm in range(arch.num_hbm_ch_per_node):
                     self.bind(hbm_interlever, f'out_{sub_hbm}', hbm_list_west[int(node_id%(arch.hbm_placement[0]*arch.num_hbm_ch_per_node))*arch.num_hbm_ch_per_node + sub_hbm], 'input')
                     pass
-            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_interleave, size=arch.hbm_node_interleave, x=0, y=node_id+1)
+            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_addr_space, size=arch.hbm_node_addr_space, x=0, y=node_id+1)
             pass
-        hbm_edge_start_base += arch.num_cluster_y*arch.hbm_node_interleave
+        hbm_edge_start_base += arch.num_cluster_y*arch.hbm_node_addr_space
 
         ## north
         for node_id in range(arch.num_cluster_x):
@@ -197,9 +212,9 @@ class FlexClusterSystem(gvsoc.systree.Component):
                 for sub_hbm in range(arch.num_hbm_ch_per_node):
                     self.bind(hbm_interlever, f'out_{sub_hbm}', hbm_list_north[int(node_id%(arch.hbm_placement[1]*arch.num_hbm_ch_per_node))*arch.num_hbm_ch_per_node + sub_hbm], 'input')
                     pass
-            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_interleave, size=arch.hbm_node_interleave, x=node_id+1, y=arch.num_cluster_y+1)
+            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_addr_space, size=arch.hbm_node_addr_space, x=node_id+1, y=arch.num_cluster_y+1)
             pass
-        hbm_edge_start_base += arch.num_cluster_x*arch.hbm_node_interleave
+        hbm_edge_start_base += arch.num_cluster_x*arch.hbm_node_addr_space
 
         ## east
         for node_id in range(arch.num_cluster_y):
@@ -211,9 +226,9 @@ class FlexClusterSystem(gvsoc.systree.Component):
                 for sub_hbm in range(arch.num_hbm_ch_per_node):
                     self.bind(hbm_interlever, f'out_{sub_hbm}', hbm_list_east[int(node_id%(arch.hbm_placement[2]*arch.num_hbm_ch_per_node))*arch.num_hbm_ch_per_node + sub_hbm], 'input')
                     pass
-            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_interleave, size=arch.hbm_node_interleave, x=arch.num_cluster_x+1, y=node_id+1)
+            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_addr_space, size=arch.hbm_node_addr_space, x=arch.num_cluster_x+1, y=node_id+1)
             pass
-        hbm_edge_start_base += arch.num_cluster_y*arch.hbm_node_interleave
+        hbm_edge_start_base += arch.num_cluster_y*arch.hbm_node_addr_space
 
         ## south
         for node_id in range(arch.num_cluster_x):
@@ -225,7 +240,7 @@ class FlexClusterSystem(gvsoc.systree.Component):
                 for sub_hbm in range(arch.num_hbm_ch_per_node):
                     self.bind(hbm_interlever, f'out_{sub_hbm}', hbm_list_south[int(node_id%(arch.hbm_placement[3]*arch.num_hbm_ch_per_node))*arch.num_hbm_ch_per_node + sub_hbm], 'input')
                     pass
-            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_interleave, size=arch.hbm_node_interleave, x=node_id+1, y=0)
+            data_noc.o_MAP(itf_router.i_INPUT(), base=hbm_edge_start_base+node_id*arch.hbm_node_addr_space, size=arch.hbm_node_addr_space, x=node_id+1, y=0)
             pass
 
 

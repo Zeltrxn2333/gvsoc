@@ -6,14 +6,15 @@
 #define ARCH_NUM_CLUSTER            (ARCH_NUM_CLUSTER_X*ARCH_NUM_CLUSTER_Y)
 #define cluster_index(x,y)          ((y)*ARCH_NUM_CLUSTER_X+(x))
 #define local(offset)               (ARCH_CLUSTER_TCDM_BASE+offset)
+#define zomem(offset)               (ARCH_CLUSTER_ZOMEM_BASE+offset)
 #define remote_cid(cid,offset)      (ARCH_CLUSTER_TCDM_REMOTE+cid*ARCH_CLUSTER_TCDM_SIZE+offset)
 #define remote_xy(x,y,offset)       (ARCH_CLUSTER_TCDM_REMOTE+cluster_index(x,y)*ARCH_CLUSTER_TCDM_SIZE+offset)
 #define remote_pos(pos,offset)      (ARCH_CLUSTER_TCDM_REMOTE+cluster_index(pos.x,pos.y)*ARCH_CLUSTER_TCDM_SIZE+offset)
 #define hbm_addr(offset)            (ARCH_HBM_START_BASE+offset)
-#define hbm_west(hid,offset)        (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_INTERLEAVE+offset)
-#define hbm_north(hid,offset)       (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_INTERLEAVE+ARCH_HBM_NODE_INTERLEAVE*ARCH_NUM_CLUSTER_Y+offset)
-#define hbm_east(hid,offset)        (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_INTERLEAVE+ARCH_HBM_NODE_INTERLEAVE*(ARCH_NUM_CLUSTER_Y+ARCH_NUM_CLUSTER_X)+offset)
-#define hbm_south(hid,offset)       (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_INTERLEAVE+ARCH_HBM_NODE_INTERLEAVE*2*ARCH_NUM_CLUSTER_Y+ARCH_HBM_NODE_INTERLEAVE*ARCH_NUM_CLUSTER_X+offset)
+#define hbm_west(hid,offset)        (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_ADDR_SPACE+offset)
+#define hbm_north(hid,offset)       (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_ADDR_SPACE+ARCH_HBM_NODE_ADDR_SPACE*ARCH_NUM_CLUSTER_Y+offset)
+#define hbm_east(hid,offset)        (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_ADDR_SPACE+ARCH_HBM_NODE_ADDR_SPACE*(ARCH_NUM_CLUSTER_Y+ARCH_NUM_CLUSTER_X)+offset)
+#define hbm_south(hid,offset)       (ARCH_HBM_START_BASE+(hid)*ARCH_HBM_NODE_ADDR_SPACE+ARCH_HBM_NODE_ADDR_SPACE*2*ARCH_NUM_CLUSTER_Y+ARCH_HBM_NODE_ADDR_SPACE*ARCH_NUM_CLUSTER_X+offset)
 
 /*******************
 * Cluster Position *
@@ -80,19 +81,19 @@ uint32_t flex_get_cluster_id(){
 
 uint32_t flex_get_core_id(){
     uint32_t hartid;
-    asm("csrr %0, mhartid" : "=r"(hartid));
+    asm volatile("csrr %0, mhartid" : "=r"(hartid));
     return hartid;
 }
 
 uint32_t flex_is_dm_core(){
     uint32_t hartid;
-    asm("csrr %0, mhartid" : "=r"(hartid));
+    asm volatile("csrr %0, mhartid" : "=r"(hartid));
     return (hartid == ARCH_NUM_CORE_PER_CLUSTER-1);
 }
 
 uint32_t flex_is_first_core(){
     uint32_t hartid;
-    asm("csrr %0, mhartid" : "=r"(hartid));
+    asm volatile("csrr %0, mhartid" : "=r"(hartid));
     return (hartid == 0);
 }
 
@@ -271,6 +272,21 @@ void flex_timer_end(){
     flex_intra_cluster_sync();
 }
 
+/*******************
+*      Logging     *
+*******************/
+
+void flex_log_char(char c){
+    uint32_t data = (uint32_t) c;
+    volatile uint32_t * log_reg = (volatile uint32_t *)(ARCH_SOC_REGISTER_EOC + 16);
+    *log_reg = data;
+}
+
+void flex_print(char * str){
+    for (int i = 0; str[i] != '\0'; i++) {
+        flex_log_char(str[i]);
+    }
+}
 
 /****************************
 *      Stack Operations     *
