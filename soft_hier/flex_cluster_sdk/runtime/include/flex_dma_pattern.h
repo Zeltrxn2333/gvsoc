@@ -178,6 +178,7 @@ void flex_dma_async_2d_dummy(uint64_t dst, uint64_t src,
     for (int i = 0; i < repeat; i++)
     {
         flex_dma_async_1d(dst + i * dst_stride, src + i * src_stride, size);
+        flex_dma_async_wait_all();
     }
 }
 
