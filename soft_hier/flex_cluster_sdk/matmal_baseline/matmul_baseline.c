@@ -85,7 +85,8 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
                                                     // SoftHier_HBM -> SoftHier_TCDM 2D
                                                     if(flex_is_dm_core())
                                                     {
-                                                        flex_dma_async_2d_dummy(local(local_A), hbm_addr(A + ((K * (((128 * ci) + (128 * gi)) + i)) + bK) * 2), 128*2, 128*2, K*2, 128);
+                                                        flex_dma_async_2d(local(local_A), hbm_addr(A + ((K * (((128 * ci) + (128 * gi)) + i)) + bK) * 2), 128*2, 128*2, K*2, 128);
+                                                        flex_dma_async_wait_all();
                                                     }
                                                     flex_intra_cluster_sync();
                                                     // copy_memory: B -> local_B, [128, 128], [N, 1], [128, 1], B + ((((N * bK) + (128 * cj)) + (128 * gj)) + j), local_B
@@ -93,7 +94,8 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
                                                     // SoftHier_HBM -> SoftHier_TCDM 2D
                                                     if(flex_is_dm_core())
                                                     {
-                                                        flex_dma_async_2d_dummy(local(local_B), hbm_addr(B + ((((N * bK) + (128 * cj)) + (128 * gj)) + j) * 2), 128*2, 128*2, N*2, 128);
+                                                        flex_dma_async_2d(local(local_B), hbm_addr(B + ((((N * bK) + (128 * cj)) + (128 * gj)) + j) * 2), 128*2, 128*2, N*2, 128);
+                                                        flex_dma_async_wait_all();
                                                     }
                                                     flex_intra_cluster_sync();
                                                     if (flex_is_first_core())
