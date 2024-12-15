@@ -136,13 +136,13 @@ void flex_dma_async_2d(uint64_t dst, uint64_t src,
         flex_print(" repeat: ");flex_print_int(repeat);
         flex_print("\n");
     }
-    // bare_dma_start_2d(dst, src, size, dst_stride, src_stride, repeat); //Start iDMA
+    bare_dma_start_2d(dst, src, size, dst_stride, src_stride, repeat); //Start iDMA
     // flex_dma_async_wait_all();
-    for (int i = 0; i < repeat; i++)
-    {
-        flex_dma_async_1d(dst + i * dst_stride, src + i * src_stride, size);
-        flex_dma_async_wait_all();
-    }
+    // for (int i = 0; i < repeat; i++)
+    //{
+    //    flex_dma_async_1d(dst + i * dst_stride, src + i * src_stride, size);
+    //    flex_dma_async_wait_all();
+    //}
 }
 
 void flex_dma_async_2d_async(uint64_t dst, uint64_t src,
