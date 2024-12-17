@@ -46,54 +46,59 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
         uint32_t cluster_id = flex_get_cluster_id();
         uint32_t core_id = flex_get_core_id();
         {
-            for (auto i = 0; i < M; i += 128) {
-                for (auto j = 0; j < N; j += 128) {
+            for (auto i = 0; i < M; i += 2048) {
+                for (auto j = 0; j < N; j += 2048) {
                     {
                         // TEST DEVICE SCOPE
                         int gi = get_pos(cluster_id).x;
                         int gj = get_pos(cluster_id).y;
-                        if (gi <= 0) {
-                            if (gj <= 0) {
-                                // Minels: [0, 0], Maxels: [0, 0]
+                        if (gi <= 7) {
+                            if (gj <= 7) {
+                                // Minels: [0, 0], Maxels: [7, 7]
                                 // Configure RedMule Here
                                 if(flex_is_first_core())
                                 {
-                                    flex_redmule_config(128, 128, 128);
+                                    flex_redmule_config(256, 256, 256);
                                 }
                                 flex_intra_cluster_sync();
                                 {
-                                    for (auto ci = 0; ci < 128; ci += 128) {
-                                        for (auto cj = 0; cj < 128; cj += 128) {
+                                    for (auto ci = 0; ci < 256; ci += 256) {
+                                        for (auto cj = 0; cj < 256; cj += 256) {
                                             uint32_t accumulator;
                                             accumulator = 0;
-                                            // DACE_ACL_CHECK(aclrtMemset(accumulator, 0, 16384 * sizeof(dace::float16)));
+                                            // DACE_ACL_CHECK(aclrtMemset(accumulator, 0, 65536 * sizeof(dace::float16)));
 
                                             if(flex_is_dm_core())
                                             {
-                                                flex_dma_async_1d(local(accumulator), zomem(0), 32768);
+                                                flex_dma_async_1d(local(accumulator), zomem(0), 131072);
                                                 flex_dma_async_wait_all();
                                             }
 
+                                            // accumulator = accumulator;
                                             {
-                                                for (auto bK = 0; bK < K; bK += 128) {
+                                                for (auto bK = 0; bK < K; bK += 256) {
                                                     uint32_t local_A;
-                                                    local_A = 32768;
+                                                    local_A = 131072;
                                                     uint32_t local_B;
-                                                    local_B = 65536;
-                                                    // copy_memory: A -> local_A, [128, 128], [K, 1], [128, 1], A + ((K * (((128 * ci) + (128 * gi)) + i)) + bK), local_A
+                                                    local_B = 262144;
+                                                    // local_A = local_A;
+                                                    // copy_memory: A -> local_A, [256, 256], [K, 1], [256, 1], A + ((K * (((256 * ci) + (256 * gi)) + i)) + bK), local_A
                                                     // is_sync = True
                                                     // SoftHier_HBM -> SoftHier_TCDM 2D
                                                     if(flex_is_dm_core())
                                                     {
-                                                        flex_dma_async_2d_dummy(local(local_A), hbm_addr(A + ((K * (((128 * ci) + (128 * gi)) + i)) + bK) * 2), 128*2, 128*2, K*2, 128);
+                                                        flex_dma_async_2d(local(local_A), hbm_addr(A + ((K * (((256 * ci) + (256 * gi)) + i)) + bK) * 2), 256*2, 256*2, K*2, 256);
+                                                        flex_dma_async_wait_all();
                                                     }
                                                     flex_intra_cluster_sync();
-                                                    // copy_memory: B -> local_B, [128, 128], [N, 1], [128, 1], B + ((((N * bK) + (128 * cj)) + (128 * gj)) + j), local_B
+                                                    // local_B = local_B;
+                                                    // copy_memory: B -> local_B, [256, 256], [N, 1], [256, 1], B + ((((N * bK) + (256 * cj)) + (256 * gj)) + j), local_B
                                                     // is_sync = True
                                                     // SoftHier_HBM -> SoftHier_TCDM 2D
                                                     if(flex_is_dm_core())
                                                     {
-                                                        flex_dma_async_2d_dummy(local(local_B), hbm_addr(B + ((((N * bK) + (128 * cj)) + (128 * gj)) + j) * 2), 128*2, 128*2, N*2, 128);
+                                                        flex_dma_async_2d(local(local_B), hbm_addr(B + ((((N * bK) + (256 * cj)) + (256 * gj)) + j) * 2), 256*2, 256*2, N*2, 256);
+                                                        flex_dma_async_wait_all();
                                                     }
                                                     flex_intra_cluster_sync();
                                                     if (flex_is_first_core())
@@ -103,7 +108,7 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
                                                         uint32_t _in_accumulator = accumulator;
 
                                                         ///////////////////
-                                                        flex_redmule_trigger(_in_local_a, _in_local_b, _in_accumulator, REDMULE_FP_16);
+                                                        flex_redmule_trigger(_in_local_a, _in_local_b, _in_accumulator, REDMULE_NONE_16);
                                                         flex_redmule_wait();
                                                         ///////////////////
 
@@ -111,12 +116,13 @@ void gemm_entry_0_0_0(uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M
                                                     flex_intra_cluster_sync();
                                                 }
                                             }
-                                            // copy_memory: accumulator -> C, [128, 128], [128, 1], [N, 1], accumulator, C + ((((N * (((128 * ci) + (128 * gi)) + i)) + (128 * cj)) + (128 * gj)) + j)
+                                            // accumulator = accumulator;
+                                            // copy_memory: accumulator -> C, [256, 256], [256, 1], [N, 1], accumulator, C + ((((N * (((256 * ci) + (256 * gi)) + i)) + (256 * cj)) + (256 * gj)) + j)
                                             // is_sync = True
                                             // SoftHier_TCDM -> SoftHier_HBM
                                             if(flex_is_dm_core())
                                             {
-                                                flex_dma_async_2d_dummy(hbm_addr(C + ((((N * (((128 * ci) + (128 * gi)) + i)) + (128 * cj)) + (128 * gj)) + j) * 2), local(accumulator), 128*2, N*2, 128*2, 128);
+                                                flex_dma_async_2d_dummy(hbm_addr(C + ((((N * (((256 * ci) + (256 * gi)) + i)) + (256 * cj)) + (256 * gj)) + j) * 2), local(accumulator), 256*2, N*2, 256*2, 256);
                                             }
                                             flex_intra_cluster_sync();
                                         }

@@ -1,20 +1,6 @@
 import os
 import numpy as np
 
-# Map NumPy types to C types
-NP_DTYPE_TO_C = {
-    np.dtype('int8'): 'int8_t',
-    np.dtype('uint8'): 'uint8_t',
-    np.dtype('int16'): 'int16_t',
-    np.dtype('uint16'): 'uint16_t',
-    np.dtype('int32'): 'int32_t',
-    np.dtype('uint32'): 'uint32_t',
-    np.dtype('int64'): 'int64_t',
-    np.dtype('uint64'): 'uint64_t',
-    np.dtype('float32'): 'float',
-    np.dtype('float64'): 'double',
-}
-
 def make_preload_elf(output_file_path, np_arrays, start_addresses=None):
     """
     Generate an ELF file preloading numpy arrays.
@@ -25,6 +11,19 @@ def make_preload_elf(output_file_path, np_arrays, start_addresses=None):
     - start_addresses (list of int or None): List of starting addresses for each array, or None.
       If None, addresses are auto-determined with 64-byte alignment.
     """
+    NP_DTYPE_TO_C = {
+        np.dtype('int8'): 'int8_t',
+        np.dtype('uint8'): 'uint8_t',
+        np.dtype('int16'): 'int16_t',
+        np.dtype('uint16'): 'uint16_t',
+        np.dtype('int32'): 'int32_t',
+        np.dtype('uint32'): 'uint32_t',
+        np.dtype('int64'): 'int64_t',
+        np.dtype('uint64'): 'uint64_t',
+        np.dtype('float16'): 'float16',
+        np.dtype('float32'): 'float',
+        np.dtype('float64'): 'double',
+    }
     # Handle default for start_addresses
     if start_addresses is None:
         start_addresses = [None] * len(np_arrays)
@@ -49,7 +48,7 @@ def make_preload_elf(output_file_path, np_arrays, start_addresses=None):
 
         section_name = f".custom_section_{idx}"
         section_names.append(section_name)
-
+        
         if start_addr is None:
             # Auto-determine the address with alignment
             start_addr = (current_address + alignment - 1) & ~(alignment - 1)
@@ -106,8 +105,10 @@ def make_preload_elf(output_file_path, np_arrays, start_addresses=None):
 if __name__ == "__main__":
     # Example usage
     np_arrays = [
-        np.array([1, 2, 3], dtype=np.int32),
-        np.array([4, 5, 6, 7, 8], dtype=np.int32),
+        # a 8192 float16 random array
+        # np.random.rand(4).astype(np.uint16),
+        np.array([64, 64+8192*2], dtype=np.uint32),
+        np.random.rand(8192).astype(np.float16),
     ]
     # Automatic alignment for all arrays
     make_preload_elf("output.elf", np_arrays)
