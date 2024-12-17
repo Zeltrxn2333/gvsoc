@@ -11,7 +11,6 @@ typedef enum {
 
 
 void flex_redmule_config(uint16_t m_size, uint16_t n_size, uint16_t k_size){
-    flex_push_stack();
     uint32_t cfg_reg0 = ((k_size << 16) | (m_size << 0));
     uint32_t cfg_reg1 = (n_size << 0);
 
@@ -32,7 +31,6 @@ void flex_redmule_config(uint16_t m_size, uint16_t n_size, uint16_t k_size){
                 (0b11100   << 15) | \
                 (0x00      <<  7) | \
                 (0b0001010 <<  0)   \n");
-    flex_pull_stack();
 }
 
 void flex_redmule_trigger(uint32_t x_addr, uint32_t w_addr, uint32_t y_addr, redmule_compute_format_t format){
@@ -110,8 +108,6 @@ void flex_redmule_trigger(uint32_t x_addr, uint32_t w_addr, uint32_t y_addr, red
                         (0b0101010 <<  0)   \n");
             break;
     }
-            
-    flex_pull_stack();
 }
 
 uint32_t flex_redmule_wait(){
