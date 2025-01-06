@@ -34,7 +34,7 @@ void flex_redmule_config(uint16_t m_size, uint16_t n_size, uint16_t k_size){
 }
 
 void flex_redmule_trigger(uint32_t x_addr, uint32_t w_addr, uint32_t y_addr, redmule_compute_format_t format){
-    flex_push_stack();
+    // flex_push_stack();
     // if (flex_is_first_core() && flex_get_cluster_id() == 0)
     // {
     //     flex_print("x_addr: ");flex_print_int(x_addr);
