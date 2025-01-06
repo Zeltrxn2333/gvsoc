@@ -25,8 +25,8 @@ class FlexClusterArch:
         self.num_cluster_y           = 4
         self.num_core_per_cluster    = 3
 
-        self.cluster_tcdm_bank_width = 64
-        self.cluster_tcdm_bank_nb    = 64
+        self.cluster_tcdm_bank_width = 32
+        self.cluster_tcdm_bank_nb    = 128
 
         self.cluster_tcdm_base       = 0x00000000
         self.cluster_tcdm_size       = 0x00100000
@@ -40,6 +40,11 @@ class FlexClusterArch:
 
         self.cluster_reg_base        = 0x20000000
         self.cluster_reg_size        = 0x00000200
+
+        #Spatz Vector Unit
+        self.spatz_attaced_core_list = []
+        self.spatz_num_vlsu_port     = 8
+        self.spatz_num_function_unit = 8
 
         #RedMule
         self.redmule_ce_height       = 128
@@ -59,6 +64,7 @@ class FlexClusterArch:
         self.hbm_node_addr_space     = 0x08000000
         self.num_hbm_ch_per_node     = 1
         self.hbm_placement           = [4,0,0,0]
+        self.hbm_edge_interleaving   = 0
 
         #NoC
         self.noc_outstanding         = 64

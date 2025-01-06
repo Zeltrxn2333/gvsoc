@@ -29,14 +29,14 @@ class FlexClusterArch:
         self.cluster_tcdm_bank_nb    = 64
 
         self.cluster_tcdm_base       = 0x00000000
-        self.cluster_tcdm_size       = 0x00100000
+        self.cluster_tcdm_size       = 0x00001000
         self.cluster_tcdm_remote     = 0x30000000
 
         self.cluster_stack_base      = 0x10000000
-        self.cluster_stack_size      = 0x00020000
+        self.cluster_stack_size      = 0x00001000
 
         self.cluster_zomem_base      = 0x18000000
-        self.cluster_zomem_size      = 0x00020000
+        self.cluster_zomem_size      = 0x00001000
 
         self.cluster_reg_base        = 0x20000000
         self.cluster_reg_size        = 0x00000200
@@ -61,9 +61,9 @@ class FlexClusterArch:
 
         #HBM
         self.hbm_start_base          = 0xc0000000
-        self.hbm_node_addr_space     = 0x04000000
+        self.hbm_node_addr_space     = 0x00010000
         self.num_hbm_ch_per_node     = 1
-        self.hbm_placement           = [4,0,0,4]
+        self.hbm_placement           = [0,0,0,0]
         self.hbm_edge_interleaving   = 0
 
         #NoC
