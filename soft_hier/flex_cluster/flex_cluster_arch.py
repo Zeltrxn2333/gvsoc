@@ -47,8 +47,8 @@ class FlexClusterArch:
         self.spatz_num_function_unit = 8
 
         #RedMule
-        self.redmule_ce_height       = 128
-        self.redmule_ce_width        = 32
+        self.redmule_ce_height       = 32
+        self.redmule_ce_width        = 8
         self.redmule_ce_pipe         = 3
         self.redmule_elem_size       = 2
         self.redmule_queue_depth     = 1
@@ -63,7 +63,7 @@ class FlexClusterArch:
         self.hbm_start_base          = 0xc0000000
         self.hbm_node_addr_space     = 0x00200000
         self.num_hbm_ch_per_node     = 1
-        self.hbm_placement           = [4,0,0,0]
+        self.hbm_placement           = [4,4,0,0]
         self.hbm_edge_interleaving   = 0
 
         #NoC
