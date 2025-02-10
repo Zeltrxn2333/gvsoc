@@ -12,6 +12,7 @@ fi
 export MPLBACKEND=Agg
 export PATH=$SDK_HOME/install/bin:$PATH
 export PYTHONPATH=$SDK_HOME/install/python:$PYTHONPATH
+export PYTHONPATH=$SDK_HOME/soft_hier/flex_cluster_utilities:$PYTHONPATH
 
 ##############################################################################
 ##              Envirment Parameters for DRAMSys Integration                ##
