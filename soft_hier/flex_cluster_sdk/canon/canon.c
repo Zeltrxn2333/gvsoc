@@ -17,54 +17,42 @@ typedef struct GEMM_state_t {
 int __dace_init_cuda(struct GEMM_state_t *__state, int K, int M, int N);
 int __dace_exit_cuda(struct GEMM_state_t *__state);
 
-
-void nested_main_0_0_13(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t K, uint32_t N, uint32_t gi, uint32_t gj) {
-    uint32_t local_A;
-    local_A = 32768;
-    uint32_t local_B;
-    local_B = 294912;
+void nested_main_2_0_0(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t local_A, uint32_t local_B, uint32_t K, uint32_t N, uint32_t bK, uint32_t gi, uint32_t gj) {
     long long _c;
 
+    //Framecode generating state init_0...
     {
-        // Start of state canon_init
-        //Framecode generating state canon_init...
-        // A = A;
-        // copy_memory: A -> s_local_A
-        // is_sync = False
-        if (flex_is_dm_core())
+        // Start of state init_sync
+        //Framecode generating state init_sync...
         {
-            flex_dma_async_2d(remote_xy(gi,gj,local_A+0 * 131072), hbm_addr(A + (512 * ((gi + gj) % 4))*2), 512*2, 512*2, K*2, 128);
+
+            ///////////////////
+
+            if (flex_is_dm_core()) {
+                flex_dma_async_wait_all();
+            }
+            flex_intra_cluster_sync();
+
+            ///////////////////
+
         }
-        // s_local_A = s_local_A;
-        // B = B;
-        // copy_memory: B -> s_local_B
-        // is_sync = False
-        if (flex_is_dm_core())
-        {
-            flex_dma_async_2d(remote_xy(gi,gj,local_B+0 * 131072), hbm_addr(B + ((512 * N) * ((gi + gj) % 4))*2), 128*2, 128*2, N*2, 512);
-        }
-        // s_local_B = s_local_B;
-        if (flex_is_dm_core())
-        {
-            flex_dma_async_wait_all();
-        }
-        flex_intra_cluster_sync();
-        // End of state canon_init
+        // End of state init_sync
 
     }
     for (_c = 0; (_c < 4); _c = (_c + 1)) {
+        //Framecode generating state start...
         {
-            // Start of state canon_compute
-            //Framecode generating state canon_compute...
+            // Start of state compute
+            //Framecode generating state compute...
             // accumulator = accumulator;
-            // s_local_A = s_local_A;
-            // local_A = local_A;
             // s_local_B = s_local_B;
             // local_B = local_B;
+            // s_local_A = s_local_A;
+            // local_A = local_A;
             if (flex_is_first_core())
             {
-                uint32_t _in_local_a = local_A + (65536 * (_c % 2)) * 2;
-                uint32_t _in_local_b = local_B + (65536 * (_c % 2)) * 2;
+                uint32_t _in_local_a = local_A + (4096 * (((bK / 512) + (3 * (_c % 2))) % 4)) * 2;
+                uint32_t _in_local_b = local_B + (8192 * (((bK / 512) + (3 * (_c % 2))) % 4)) * 2;
                 uint32_t _in_accumulator = accumulator;
 
                 ///////////////////
@@ -74,43 +62,139 @@ void nested_main_0_0_13(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t K
 
             }
             // accumulator = accumulator;
-            // local_A = local_A;
-            // copy_memory: local_A -> s_local_A
-            // is_sync = False
-            if (flex_is_dm_core())
-            {
-                bare_dma_start_1d(remote_xy(gi,((gj + 1) % 4),local_A+((_c + 1) % 2) * 131072), local(local_A + (65536 * (_c % 2))*2), 131072);
-            }
+            // End of state compute
 
-            // s_local_A = s_local_A;
+        }
+        {
+            // Start of state communication
+            //Framecode generating state communication...
             // local_B = local_B;
             // copy_memory: local_B -> s_local_B
             // is_sync = False
             if (flex_is_dm_core())
             {
-                bare_dma_start_1d(remote_xy(((gi + 1) % 4),gj,local_B+((_c + 1) % 2) * 131072), local(local_B + (65536 * (_c % 2))*2), 131072);
+                bare_dma_start_1d(remote_xy(((gi + 1) % 4),gj,local_B+(((bK / 512) + (3 * ((_c + 1) % 2))) % 4) * 16384), local(local_B + (8192 * (((bK / 512) + (3 * (_c % 2))) % 4))*2), 16384);
             }
             // s_local_B = s_local_B;
+            // local_A = local_A;
+            // copy_memory: local_A -> s_local_A
+            // is_sync = False
             if (flex_is_dm_core())
             {
-                flex_dma_async_wait_all();
+                bare_dma_start_1d(remote_xy(gi,((gj + 1) % 4),local_A+(((bK / 512) + (3 * ((_c + 1) % 2))) % 4) * 8192), local(local_A + (4096 * (((bK / 512) + (3 * (_c % 2))) % 4))*2), 8192);
             }
-            flex_intra_cluster_sync();
-            // End of state canon_compute
+            // s_local_A = s_local_A;
+            // End of state communication
 
         }
+        if ((bK < ((K - 1) - 512))) {
+            //Framecode generating state hbm_split_load_start...
+            if ((gi == ((4 - _c) - 1))) {
+                {
+                    // Start of state local_B_hbm
+                    //Framecode generating state local_B_hbm...
+                    // B = B;
+                    // copy_memory: B -> s_local_B
+                    // is_sync = False
+                    if (flex_is_dm_core())
+                    {
+                        flex_dma_async_2d(remote_xy(gi,gj,local_B+(((bK / 512) + 1) % 4) * 16384), hbm_addr(B + (N * ((bK + (128 * ((gi + gj) % 4))) + 512))*2), 64*2, 64*2, N*2, 128);
+                        flex_dma_async_wait_all();
+                    }
+                    // s_local_B = s_local_B;
+                    // End of state local_B_hbm
+
+                }
+            }
+            if ((gj == ((4 - _c) - 1))) {
+                {
+                    // Start of state local_A_hbm
+                    //Framecode generating state local_A_hbm...
+                    // A = A;
+                    // copy_memory: A -> s_local_A
+                    // is_sync = False
+                    if (flex_is_dm_core())
+                    {
+                        flex_dma_async_2d(remote_xy(gi,gj,local_A+(((bK / 512) + 1) % 4) * 8192), hbm_addr(A + ((bK + (128 * ((gi + gj) % 4))) + 512)*2), 128*2, 128*2, K*2, 32);
+                        flex_dma_async_wait_all();
+                    }
+                    // s_local_A = s_local_A;
+                    // End of state local_A_hbm
+
+                }
+            }
+        }
         {
-            // Start of state canon_sync
-            //Framecode generating state canon_sync...
+            // Start of state sync
+            //Framecode generating state sync...
             {
 
                 ///////////////////
+
+                if (flex_is_dm_core()) {
+                    flex_dma_async_wait_all();
+                }
+                flex_intra_cluster_sync();
                 flex_global_barrier_xy();
+
                 ///////////////////
 
             }
-            flex_intra_cluster_sync();
-            // End of state canon_sync
+            // End of state sync
+
+        }
+
+    }
+}
+
+void nested_main_0_0_11(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t K, uint32_t N, uint32_t gi, uint32_t gj) {
+    uint32_t local_A;
+    local_A = 4096;
+    uint32_t local_B;
+    local_B = 36864;
+    long long bK;
+
+    {
+        // Start of state block_tiled_init
+        //Framecode generating state block_tiled_init...
+        // B = B;
+        // copy_memory: B -> s_local_B
+        // is_sync = False
+        if (flex_is_dm_core())
+        {
+            flex_dma_async_2d(remote_xy(gi,gj,local_B+0 * 16384), hbm_addr(B + ((128 * N) * ((gi + gj) % 4))*2), 64*2, 64*2, N*2, 128);
+            flex_dma_async_wait_all();
+        }
+        // s_local_B = s_local_B;
+        // A = A;
+        // copy_memory: A -> s_local_A
+        // is_sync = False
+        if (flex_is_dm_core())
+        {
+            flex_dma_async_2d(remote_xy(gi,gj,local_A+0 * 8192), hbm_addr(A + (128 * ((gi + gj) % 4))*2), 128*2, 128*2, K*2, 32);
+            flex_dma_async_wait_all();
+        }
+        // s_local_A = s_local_A;
+        // End of state block_tiled_init
+
+    }
+    for (bK = 0; (bK < K); bK = (bK + 512)) {
+        {
+            // Start of state block
+            //Framecode generating state block...
+            // accumulator = accumulator;
+            // A = A;
+            // B = B;
+            // s_local_A = s_local_A;
+            // local_A = local_A;
+            // s_local_B = s_local_B;
+            // local_B = local_B;
+            // Nested SDFG nested_main begin
+            nested_main_2_0_0(A, B, accumulator, local_A, local_B, K, N, bK, gi, gj);
+            // accumulator = accumulator;
+            // local_A = local_A;
+            // local_B = local_B;
+            // End of state block
 
         }
 
@@ -145,8 +229,8 @@ void gemm_entry_0_0_0(const uint32_t A, const uint32_t B, const uint32_t C, cons
         uint32_t cluster_id = flex_get_cluster_id();
         uint32_t core_id = flex_get_core_id();
         {
-            for (auto i = 0; i < M; i += 512) {
-                for (auto j = 0; j < N; j += 512) {
+            for (auto i = 0; i < M; i += 128) {
+                for (auto j = 0; j < N; j += 256) {
                     {
                         // TEST DEVICE SCOPE
                         int gi = get_pos(cluster_id).x;
@@ -157,36 +241,32 @@ void gemm_entry_0_0_0(const uint32_t A, const uint32_t B, const uint32_t C, cons
                                 // Configure RedMule Here
                                 if(flex_is_first_core())
                                 {
-                                    flex_redmule_config(128, 512, 128);
+                                    flex_redmule_config(32, 128, 64);
                                 }
                                 flex_intra_cluster_sync();
                                 {
-                                    for (auto ci = 0; ci < 128; ci += 128) {
-                                        for (auto cj = 0; cj < 128; cj += 128) {
+                                    for (auto ci = 0; ci < 32; ci += 32) {
+                                        for (auto cj = 0; cj < 64; cj += 64) {
                                             uint32_t accumulator;
                                             accumulator = 0;
-                                            // DACE_ACL_CHECK(aclrtMemset(accumulator, 0, 16384 * sizeof(dace::float16)));
+                                            // DACE_ACL_CHECK(aclrtMemset(accumulator, 0, 2048 * sizeof(dace::float16)));
 
                                             if(flex_is_dm_core())
                                             {
-                                                flex_dma_async_1d(local(accumulator), zomem(0), 32768);
+                                                flex_dma_async_1d(local(accumulator), zomem(0), 4096);
                                                 flex_dma_async_wait_all();
                                             }
 
                                             // accumulator = accumulator;
-                                            {
-                                                for (auto bK = 0; bK < K; bK += 2048) {
-                                                    // Nested SDFG nested_main begin
-                                                    nested_main_0_0_13(A + ((K * (((128 * ci) + (128 * gi)) + i)) + bK) * 2, B + ((((N * bK) + (128 * cj)) + (128 * gj)) + j) * 2, accumulator, K, N, gi, gj);
-                                                }
-                                            }
+                                            // Nested SDFG nested_main begin
+                                            nested_main_0_0_11(A + (K * (((32 * ci) + (32 * gi)) + i)) * 2, B + (((64 * cj) + (64 * gj)) + j) * 2, accumulator, K, N, gi, gj);
                                             // accumulator = accumulator;
-                                            // copy_memory: accumulator -> C, [128, 128], [128, 1], [N, 1], accumulator, C + ((((N * (((128 * ci) + (128 * gi)) + i)) + (128 * cj)) + (128 * gj)) + j)
+                                            // copy_memory: accumulator -> C, [32, 64], [64, 1], [N, 1], accumulator, C + ((((N * (((32 * ci) + (32 * gi)) + i)) + (64 * cj)) + (64 * gj)) + j)
                                             // is_sync = True
                                             // SoftHier_TCDM -> SoftHier_HBM
                                             if(flex_is_dm_core())
                                             {
-                                                flex_dma_async_2d_dummy(hbm_addr(C + ((((N * (((128 * ci) + (128 * gi)) + i)) + (128 * cj)) + (128 * gj)) + j) * 2), local(accumulator), 128*2, N*2, 128*2, 128);
+                                                flex_dma_async_2d_dummy(hbm_addr(C + ((((N * (((32 * ci) + (32 * gi)) + i)) + (64 * cj)) + (64 * gj)) + j) * 2), local(accumulator), 64*2, N*2, 64*2, 32);
                                             }
                                             flex_intra_cluster_sync();
                                         }
@@ -202,8 +282,6 @@ void gemm_entry_0_0_0(const uint32_t A, const uint32_t B, const uint32_t C, cons
         }
     }
 }
-
-
 
 void gemm_entry_0_0_0_0(const uint32_t A, const uint32_t B, const uint32_t C, const uint32_t K, const uint32_t M, const uint32_t N) {
     {
