@@ -367,4 +367,9 @@ uint32_t dace_remote_xy(uint32_t x, uint32_t y, uint32_t offset){
     }
 }
 
+typedef struct PlacementInfo
+{
+    uint32_t channel_id;
+    uint32_t tile_offset;
+}PlacementInfo;
 #endif
