@@ -354,4 +354,20 @@ void test_HBM_interleaving(){
     }
     flex_global_barrier_xy();//Global barrier
 }
+
+#include "flex_libfp16.h"
+
+void test_FP16(){
+    flex_global_barrier_xy();//Global barrier
+    if (flex_is_first_core() && flex_get_cluster_id() == 0)
+    {
+        volatile fp16 * ptr = (volatile fp16 *)0;
+        for (int i = 0; i < 8; ++i)
+        {
+            float a = fp16_to_float(ptr[i]);
+            printf("local float is %f\n", a);
+        }
+    }
+    flex_global_barrier_xy();//Global barrier
+}
 #endif

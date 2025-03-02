@@ -7,10 +7,14 @@
 	- [x] Update CMD for example simulation
 - [x] Support Printf
 - [ ] SoftHier tutorial
-	- [ ] SoftHier architecture configuration
-		- [ ] Familiarize with basic runtime
-	- [ ] Synchronization
-	- [ ] DMA
-	- [ ] RedMulE
-	- [ ] Spatz
-	- [ ] Group synchronization
+	- [x] SoftHier architecture configuration
+		- [x] Familiarize with basic runtime
+	- [x] HBM Pre-load and Post-load
+	- [ ] Compute with Snitch core
+	- [ ] Compute with RedMulE
+	- [ ] Compute with Spatz
+	- [ ] Advanced Synchronization
+		- [ ] global sync
+		- [ ] intra cluster sync
+		- [ ] group cluster sync
+	- [ ] Advanced DMA APIs
