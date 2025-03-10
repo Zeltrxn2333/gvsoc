@@ -343,7 +343,7 @@ void main(GEMM_state_t *__state, uint32_t A, uint32_t B, uint32_t C, uint32_t K,
     uint32_t eoc_val = 0;
     flex_global_barrier_xy();
     flex_timer_start();
-    gemm_entry_0_0_0(A, B, C);
+    // gemm_entry_0_0_0(A, B, C);
     flex_intra_cluster_sync();
     flex_global_barrier_xy();
     flex_timer_end();
