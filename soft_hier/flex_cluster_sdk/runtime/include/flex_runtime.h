@@ -360,4 +360,13 @@ void flex_sat(uint32_t val){
     *sat_reg = val;
 }
 
+
+#define dace_cluster_index(x,y,dim_x)         ((y)*(dim_x)+(x))
+#define dace_remote_xy(x,y,offset,dim_x)       (ARCH_CLUSTER_TCDM_REMOTE+dace_cluster_index(x,y,dim_x)*ARCH_CLUSTER_TCDM_SIZE+offset)
+
+typedef struct PlacementInfo
+{
+    uint32_t channel_id;
+    uint32_t tile_offset;
+}PlacementInfo;
 #endif
