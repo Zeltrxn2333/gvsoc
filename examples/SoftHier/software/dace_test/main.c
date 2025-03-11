@@ -8,6 +8,8 @@
 #include "flex_cluster_arch.h"
 #include "flex_dma_pattern.h"
 
+#define floor(x) ((x))
+
 typedef struct GEMM_state_t {
     int filler;
 }GEMM_state_t;
@@ -17,20 +19,21 @@ typedef struct GEMM_state_t {
 int __dace_init_cuda(struct GEMM_state_t *__state);
 int __dace_exit_cuda(struct GEMM_state_t *__state);
 
-void nested_main_1_0_4(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t gi, uint32_t gj, uint32_t i, uint32_t j) {
-    uint32_t local_B;
-    local_B = 512;
+
+void nested_main_1_0_4(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t gi, uint32_t gj) {
     uint32_t local_A;
-    local_A = 1536;
+    local_A = 512;
+    uint32_t local_B;
+    local_B = 1536;
     long long _c;
 
     //Framecode generating state init...
-    for (_c = (((i + j) || 0) * (gi + gj)); (_c < (((gi + gj) + 1) + (256 / 16))); _c = (_c + 1)) {
-        //Framecode generating state systolic_start...
-        if (((_c > (gi + gj)) && (_c <= ((gi + gj) + (256 / 16))))) {
+    for (_c = (floor((gi / 2)) + floor((gj / 2))); (_c <= ((floor((gi / 2)) + floor((gj / 2))) + (256 / 16))); _c = (_c + 1)) {
+        //Framecode generating state start...
+        if (((_c > (floor((gi / 2)) + floor((gj / 2)))) && (_c <= ((floor((gi / 2)) + floor((gj / 2))) + (256 / 16))))) {
             {
-                // Start of state systolic_compute
-                //Framecode generating state systolic_compute...
+                // Start of state compute
+                //Framecode generating state compute...
                 // local_A = local_A;
                 // local_B = local_B;
                 // accumulator = accumulator;
@@ -47,124 +50,130 @@ void nested_main_1_0_4(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t gi
 
                 }
                 // accumulator = accumulator;
-                // End of state systolic_compute
+                // End of state compute
 
             }
         }
-        if (((_c >= (gi + gj)) && (_c < ((gi + gj) + (256 / 16))))) {
-            //Framecode generating state empty_comm...
-            if ((gi == 0)) {
+        if (((_c >= (floor((gi / 2)) + floor((gj / 2)))) && (_c < ((floor((gi / 2)) + floor((gj / 2))) + (256 / 16))))) {
+            //Framecode generating state local_248...
+            if (((floor((gi / 2)) == 0) && ((gi % 2) == 0))) {
                 {
-                    // Start of state local_B_hbm
-                    //Framecode generating state local_B_hbm...
+                    // Start of state local_434
+                    //Framecode generating state local_434...
                     // B = B;
-                    // copy_memory: B -> local_B, [16, 16], [256, 1], [16, 1], B + (((4096 * _c) - (4096 * gi)) - (4096 * gj)), local_B + (256 * ((_c + 1) % 2))
-                    // is_sync = False
+                    // copy_memory: B -> local_B, [16, 16], [256, 1], [16, 1], B + (((4096 * _c) - (4096 * (gi / 2))) - (4096 * (gj / 2))), local_B + (256 * ((_c + 1) % 2))
+                    // is_sync = True
                     // SoftHier_HBM -> SoftHier_TCDM 2D
                     if(flex_is_dm_core())
                     {
-                        flex_dma_sync_2d(local(local_B + (256 * ((_c + 1) % 2)) * 2), hbm_addr(B + (((4096 * _c) - (4096 * gi)) - (4096 * gj)) * 2), 16*2, 16*2, 256*2, 16);
+                        flex_dma_sync_2d(local(local_B + (256 * ((_c + 1) % 2)) * 2), hbm_addr(B + (((4096 * _c) - (4096 * (gi / 2))) - (4096 * (gj / 2))) * 2), 16*2, 16*2, 256*2, 16);
                         flex_dma_async_wait_all();
                     }
                     // local_B = local_B;
-                    // local_B = local_B;
+                    if (flex_is_dm_core())
+                    {
+                        flex_dma_async_1d_broadcast(dace_remote_xy(gi + 1,gj,local_B+((_c + 1) % 2) * 512,8), local(local_B + (256 * ((_c + 1) % 2))*2), 512);
+                        flex_dma_async_wait_all();
+                    }
                     // s_local_B = s_local_B;
-                    // End of state local_B_hbm
+                    // End of state local_434
 
                 }
-            } else if (((gi > 0) && (gi < (4 - 1)))) {
+            } else if (((floor((gi / 2)) > 0) && ((gi % 2) == 0))) {
                 {
-                    // Start of state local_B_tcdm
-                    //Framecode generating state local_B_tcdm...
-                    // local_B = local_B;
+                    // Start of state local_886
+                    //Framecode generating state local_886...
                     // s_local_B = s_local_B;
+                    // copy_memory: s_local_B -> local_B
+                    // is_sync = True
+                    if (flex_is_dm_core())
+                    {
+                        bare_dma_start_1d(local(local_B + (256 * ((_c + 1) % 2))*2), dace_remote_xy(((gi + 7) % 8),gj,local_B+(_c % 2) * 512,8), 512);
+                        flex_dma_async_wait_all();
+                    }
+                    // local_B = local_B;
+                    if (flex_is_dm_core())
+                    {
+                        flex_dma_async_1d_broadcast(dace_remote_xy(gi + 1,gj,local_B+((_c + 1) % 2) * 512,8), local(local_B + (256 * ((_c + 1) % 2))*2), 512);
+                        flex_dma_async_wait_all();
+                    }
+                    // s_local_B = s_local_B;
+                    // End of state local_886
+
+                }
+            } else if (((gi % 2) > 0)) {
+                {
+                    // Start of state local_494
+                    //Framecode generating state local_494...
                     // s_local_B = s_local_B;
                     // copy_memory: s_local_B -> local_B
                     // is_sync = False
-                    if (flex_is_dm_core())
-                    {
-                        bare_dma_start_1d(local(local_B + (256 * ((_c + 1) % 2))*2), dace_remote_xy(((gi + 3) % 4),gj,local_B+(_c % 2) * 512,4), 512);
-                        flex_dma_async_wait_all();
-                    }
                     // local_B = local_B;
-                    // End of state local_B_tcdm
-
-                }
-            } else if ((gi == (4 - 1))) {
-                {
-                    // Start of state local_B_tcdm_last
-                    //Framecode generating state local_B_tcdm_last...
-                    // s_local_B = s_local_B;
-                    // copy_memory: s_local_B -> local_B
-                    // is_sync = False
-                    if (flex_is_dm_core())
-                    {
-                        bare_dma_start_1d(local(local_B + (256 * ((_c + 1) % 2))*2), dace_remote_xy(((gi + 3) % 4),gj,local_B+(_c % 2) * 512,4), 512);
-                        flex_dma_async_wait_all();
-                    }
-                    // local_B = local_B;
-                    // End of state local_B_tcdm_last
+                    // End of state local_494
 
                 }
             }
-            if ((gj == 0)) {
+            if (((floor((gj / 2)) == 0) && ((gj % 2) == 0))) {
                 {
-                    // Start of state local_A_hbm
-                    //Framecode generating state local_A_hbm...
+                    // Start of state local_963
+                    //Framecode generating state local_963...
                     // A = A;
-                    // copy_memory: A -> local_A, [16, 16], [256, 1], [16, 1], A + (((16 * _c) - (16 * gi)) - (16 * gj)), local_A + (256 * ((_c + 1) % 2))
-                    // is_sync = False
+                    // copy_memory: A -> local_A, [16, 16], [256, 1], [16, 1], A + (((16 * _c) - (16 * (gi / 2))) - (16 * (gj / 2))), local_A + (256 * ((_c + 1) % 2))
+                    // is_sync = True
                     // SoftHier_HBM -> SoftHier_TCDM 2D
                     if(flex_is_dm_core())
                     {
-                        flex_dma_sync_2d(local(local_A + (256 * ((_c + 1) % 2)) * 2), hbm_addr(A + (((16 * _c) - (16 * gi)) - (16 * gj)) * 2), 16*2, 16*2, 256*2, 16);
+                        flex_dma_sync_2d(local(local_A + (256 * ((_c + 1) % 2)) * 2), hbm_addr(A + (((16 * _c) - (16 * (gi / 2))) - (16 * (gj / 2))) * 2), 16*2, 16*2, 256*2, 16);
                         flex_dma_async_wait_all();
                     }
                     // local_A = local_A;
-                    // local_A = local_A;
+                    if (flex_is_dm_core())
+                    {
+                        flex_dma_async_1d_broadcast(dace_remote_xy(gi,gj + 1,local_A+((_c + 1) % 2) * 512,8), local(local_A + (256 * ((_c + 1) % 2))*2), 512);
+                        flex_dma_async_wait_all();
+                    }
                     // s_local_A = s_local_A;
-                    // End of state local_A_hbm
+                    // End of state local_963
 
                 }
-            } else if (((gj > 0) && (gj < (4 - 1)))) {
+            } else if (((floor((gj / 2)) > 0) && ((gj % 2) == 0))) {
                 {
-                    // Start of state local_A_tcdm
-                    //Framecode generating state local_A_tcdm...
-                    // local_A = local_A;
+                    // Start of state local_780
+                    //Framecode generating state local_780...
                     // s_local_A = s_local_A;
+                    // copy_memory: s_local_A -> local_A
+                    // is_sync = True
+                    if (flex_is_dm_core())
+                    {
+                        bare_dma_start_1d(local(local_A + (256 * ((_c + 1) % 2))*2), dace_remote_xy(gi,((gj + 7) % 8),local_A+(_c % 2) * 512,8), 512);
+                        flex_dma_async_wait_all();
+                    }
+                    // local_A = local_A;
+                    if (flex_is_dm_core())
+                    {
+                        flex_dma_async_1d_broadcast(dace_remote_xy(gi,gj + 1,local_A+((_c + 1) % 2) * 512,8), local(local_A + (256 * ((_c + 1) % 2))*2), 512);
+                        flex_dma_async_wait_all();
+                    }
+                    // s_local_A = s_local_A;
+                    // End of state local_780
+
+                }
+            } else if (((gj % 2) > 0)) {
+                {
+                    // Start of state local_286
+                    //Framecode generating state local_286...
                     // s_local_A = s_local_A;
                     // copy_memory: s_local_A -> local_A
                     // is_sync = False
-                    if (flex_is_dm_core())
-                    {
-                        bare_dma_start_1d(local(local_A + (256 * ((_c + 1) % 2))*2), dace_remote_xy(gi,((gj + 3) % 4),local_A+(_c % 2) * 512,4), 512);
-                        flex_dma_async_wait_all();
-                    }
                     // local_A = local_A;
-                    // End of state local_A_tcdm
-
-                }
-            } else if ((gj == (4 - 1))) {
-                {
-                    // Start of state local_A_tcdm_last
-                    //Framecode generating state local_A_tcdm_last...
-                    // s_local_A = s_local_A;
-                    // copy_memory: s_local_A -> local_A
-                    // is_sync = False
-                    if (flex_is_dm_core())
-                    {
-                        bare_dma_start_1d(local(local_A + (256 * ((_c + 1) % 2))*2), dace_remote_xy(gi,((gj + 3) % 4),local_A+(_c % 2) * 512,4), 512);
-                        flex_dma_async_wait_all();
-                    }
-                    // local_A = local_A;
-                    // End of state local_A_tcdm_last
+                    // End of state local_286
 
                 }
             }
         }
         {
-            // Start of state canon_sync
-            //Framecode generating state canon_sync...
+            // Start of state sync
+            //Framecode generating state sync...
             {
 
                 ///////////////////
@@ -178,7 +187,7 @@ void nested_main_1_0_4(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t gi
                 ///////////////////
 
             }
-            // End of state canon_sync
+            // End of state sync
 
         }
 
@@ -187,6 +196,31 @@ void nested_main_1_0_4(uint32_t A, uint32_t B, uint32_t accumulator, uint32_t gi
 
 void nested_main_0_0_9(uint32_t A, uint32_t B, uint32_t C, uint32_t gi, uint32_t gj, uint32_t i, uint32_t j) {
 
+    {
+        // Start of state pre_shift
+        //Framecode generating state pre_shift...
+        {
+
+            ///////////////////
+
+            if ((i == 0) && (j == 0))
+            {
+                for (int sync_iter = 0; sync_iter < floor(gi/2)+floor(gj/2); sync_iter++){
+                    flex_global_barrier_xy();
+                }
+                if (flex_is_dm_core()) {
+                    flex_dma_async_wait_all();
+                }
+                flex_intra_cluster_sync();
+                flex_global_barrier_xy();
+            }
+
+            ///////////////////
+
+        }
+        // End of state pre_shift
+
+    }
     {
         // Start of state block
         //Framecode generating state block...
@@ -198,13 +232,14 @@ void nested_main_0_0_9(uint32_t A, uint32_t B, uint32_t C, uint32_t gi, uint32_t
             flex_dma_async_wait_all();
         }
         flex_intra_cluster_sync();
+
         // accumulator = accumulator;
         // A = A;
         // B = B;
         {
             for (int bK = 0; bK < 256; bK += 256) {
                 // Nested SDFG nested_main begin
-                nested_main_1_0_4(A + bK * 2, B + (256 * bK) * 2, accumulator, gi, gj, i, j);
+                nested_main_1_0_4(A + bK * 2, B + (256 * bK) * 2, accumulator, gi, gj);
             }
         }
         // accumulator = accumulator;
@@ -220,15 +255,15 @@ void nested_main_0_0_9(uint32_t A, uint32_t B, uint32_t C, uint32_t gi, uint32_t
 
     }
     {
-        // Start of state systolic_sync
-        //Framecode generating state systolic_sync...
+        // Start of state post_shift
+        //Framecode generating state post_shift...
         {
 
             ///////////////////
 
-            if ((i >= 256 - 4*16) && (j >= 256 - 4*16))
+            if ((i >= 256 - 8*16) && (j >= 256 - 8*16))
             {
-                for (int sync_iter = 0; sync_iter < 2*4 - 1 - gi - gj - 1; sync_iter++){
+                for (int sync_iter = 0; sync_iter < 8 - 1 - (floor(gi/2)+floor(gj/2)) - 1; sync_iter++){
                     flex_global_barrier_xy();
                 }
                 if (flex_is_dm_core()) {
@@ -241,7 +276,7 @@ void nested_main_0_0_9(uint32_t A, uint32_t B, uint32_t C, uint32_t gi, uint32_t
             ///////////////////
 
         }
-        // End of state systolic_sync
+        // End of state post_shift
 
     }
 }
@@ -274,15 +309,15 @@ void gemm_entry_0_0_0(const uint32_t A, const uint32_t B, const uint32_t C) {
         uint32_t cluster_id = flex_get_cluster_id();
         uint32_t core_id = flex_get_core_id();
         {
-            for (int i = 0; i < 256; i += 64) {
-                for (int j = 0; j < 256; j += 64) {
+            for (int i = 0; i < 256; i += 128) {
+                for (int j = 0; j < 256; j += 128) {
                     {
                         // TEST DEVICE SCOPE
-                        int gi = cluster_id % 4;
-                        int gj = cluster_id / 4;
-                        if (gi <= 3) {
-                            if (gj <= 3) {
-                                // Minels: [0, 0], Maxels: [3, 3]
+                        int gi = cluster_id % 8;
+                        int gj = cluster_id / 8;
+                        if (gi <= 7) {
+                            if (gj <= 7) {
+                                // Minels: [0, 0], Maxels: [7, 7]
                                 // Configure RedMule Here
                                 if(flex_is_first_core())
                                 {
@@ -307,8 +342,6 @@ void gemm_entry_0_0_0(const uint32_t A, const uint32_t B, const uint32_t C) {
         }
     }
 }
-
-
 
 
 void main(GEMM_state_t *__state, uint32_t A, uint32_t B, uint32_t C, uint32_t K, uint32_t M, uint32_t N);
@@ -353,7 +386,7 @@ void main(GEMM_state_t *__state, uint32_t A, uint32_t B, uint32_t C, uint32_t K,
             for (int gj = 0; gj < N; gj++){
                 if (((uint16_t *)(hbm_addr(C)))[gj + gi * N] != ((uint16_t *)(hbm_addr(G)))[gj + gi * N]){
                     printf("%d, %d, %x, %x\n", gi, gj, ((uint16_t *)(hbm_addr(C)))[gj + gi * N], ((uint16_t *)(hbm_addr(G)))[gj + gi * N]);
-                    break;
+                    // break;
                 }
             }
         }
