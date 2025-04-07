@@ -360,17 +360,6 @@ void flex_sat(uint32_t val){
     *sat_reg = val;
 }
 
-// uint32_t dace_remote_xy(uint32_t x, uint32_t y, uint32_t offset, uint32_t dim_x){
-//     FlexPosition pos = get_pos(flex_get_cluster_id());
-//     if (x == pos.x && y == pos.y)
-//     {
-//         return local(offset);
-//     } 
-//     else
-//     {
-//         return remote_xy(x,y,offset);
-//     }
-// }
 
 #define dace_cluster_index(x,y,dim_x)         ((y)*(dim_x)+(x))
 #define dace_remote_xy(x,y,offset,dim_x)       (ARCH_CLUSTER_TCDM_REMOTE+dace_cluster_index(x,y,dim_x)*ARCH_CLUSTER_TCDM_SIZE+offset)
